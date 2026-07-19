@@ -58,6 +58,14 @@ public class UserServiceImpl implements UserService {
         Role role = roleRepository.findByRoleName(request.getRoleName())
                 .orElseThrow(() -> new RuntimeException("Role not found."));
 
+        // Validate password for registration
+        if (request.getPassword() == null || request.getPassword().trim().isEmpty()) {
+            throw new RuntimeException("Password is required.");
+        }
+        if (request.getPassword().length() < 6 || request.getPassword().length() > 20) {
+            throw new RuntimeException("Password must be between 6 and 20 characters.");
+        }
+
         // Convert DTO to Entity
         User user = userMapper.toEntity(request);
 
@@ -69,7 +77,7 @@ public class UserServiceImpl implements UserService {
 
         // Default Values
         user.setActive(true);
-        user.setVerified(false);
+        user.setVerified(true);
 
         // Save User
         User savedUser = userRepository.save(user);
@@ -114,6 +122,10 @@ public class UserServiceImpl implements UserService {
         // Update password only if provided
         if (request.getPassword() != null
                 && !request.getPassword().trim().isEmpty()) {
+
+            if (request.getPassword().length() < 6 || request.getPassword().length() > 20) {
+                throw new RuntimeException("Password must be between 6 and 20 characters.");
+            }
 
             user.setPassword(
                     passwordEncoder.encode(request.getPassword()));

@@ -12,7 +12,10 @@ import com.pranamitra.entity.User;
 import com.pranamitra.mapper.StudentDonorMapper;
 import com.pranamitra.repository.StudentDonorRepository;
 import com.pranamitra.repository.UserRepository;
+import com.pranamitra.repository.RoleRepository;
 import com.pranamitra.service.StudentDonorService;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import com.pranamitra.entity.Role;
 
 @Service
 public class StudentDonorServiceImpl implements StudentDonorService {
@@ -20,26 +23,65 @@ public class StudentDonorServiceImpl implements StudentDonorService {
     private final StudentDonorRepository donorRepository;
     private final UserRepository userRepository;
     private final StudentDonorMapper donorMapper;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public StudentDonorServiceImpl(StudentDonorRepository donorRepository,
                                    UserRepository userRepository,
-                                   StudentDonorMapper donorMapper) {
+                                   StudentDonorMapper donorMapper,
+                                   RoleRepository roleRepository,
+                                   PasswordEncoder passwordEncoder) {
         this.donorRepository = donorRepository;
         this.userRepository = userRepository;
         this.donorMapper = donorMapper;
+        this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     public StudentDonorResponse registerDonor(StudentDonorRequest request) {
 
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
+        // Validate duplicates
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("Email already exists.");
+        }
+        if (userRepository.existsByMobileNumber(request.getMobileNumber())) {
+            throw new RuntimeException("Mobile number already exists.");
+        }
         if (donorRepository.existsByStudentId(request.getStudentId())) {
             throw new RuntimeException("Student ID already exists");
         }
 
-        StudentDonor donor = donorMapper.toEntity(request, user);
+        // Split fullName into firstName and lastName
+        String fullName = request.getFullName() != null ? request.getFullName().trim() : "";
+        String firstName = "";
+        String lastName = "";
+        int spaceIndex = fullName.indexOf(' ');
+        if (spaceIndex != -1) {
+            firstName = fullName.substring(0, spaceIndex).trim();
+            lastName = fullName.substring(spaceIndex + 1).trim();
+        } else {
+            firstName = fullName;
+            lastName = "";
+        }
+
+        // Create new User record
+        User user = new User();
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setEmail(request.getEmail());
+        user.setMobileNumber(request.getMobileNumber());
+        user.setPassword(passwordEncoder.encode("Donor@123")); // Default password
+        user.setVerified(true);
+        user.setActive(true);
+
+        Role role = roleRepository.findByRoleName(com.pranamitra.enums.RoleType.DONOR)
+                .orElseThrow(() -> new RuntimeException("Donor role not found"));
+        user.setRole(role);
+
+        User savedUser = userRepository.save(user);
+
+        StudentDonor donor = donorMapper.toEntity(request, savedUser);
 
         StudentDonor savedDonor = donorRepository.save(donor);
 

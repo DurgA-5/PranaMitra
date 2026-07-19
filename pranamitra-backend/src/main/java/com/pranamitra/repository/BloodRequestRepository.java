@@ -27,7 +27,8 @@ public interface BloodRequestRepository extends JpaRepository<BloodRequest, Long
 
     List<BloodRequest> findByRequestStatus(RequestStatus requestStatus);
 
-    boolean existsByRequestNumber(String requestNumber);
+    @Query("SELECT b.id FROM BloodRequest b WHERE b.requestNumber = :requestNumber")
+	boolean existsByRequestNumber(String requestNumber);
 
     // ==================================================
     // Reports & Analytics

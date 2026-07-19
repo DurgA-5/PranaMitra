@@ -1,5 +1,5 @@
-package com.pranamitra.security;
-
-public class SecurityConfig {
-
-}
+//package com.pranamitra.security;
+//
+//public class SecurityConfig {
+//
+//}

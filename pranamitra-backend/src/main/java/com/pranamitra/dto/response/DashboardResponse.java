@@ -11,6 +11,8 @@ public class DashboardResponse {
     private Long pendingRequests;
     private Long completedRequests;
     private Long totalBloodBanks;
+    private Long emergencyRequests;
+    private Long newContactQueries;
 
     public DashboardResponse() {
     }
@@ -85,5 +87,21 @@ public class DashboardResponse {
 
     public void setTotalBloodBanks(Long totalBloodBanks) {
         this.totalBloodBanks = totalBloodBanks;
+    }
+
+    public Long getEmergencyRequests() {
+        return emergencyRequests;
+    }
+
+    public void setEmergencyRequests(Long emergencyRequests) {
+        this.emergencyRequests = emergencyRequests;
+    }
+
+    public Long getNewContactQueries() {
+        return newContactQueries;
+    }
+
+    public void setNewContactQueries(Long newContactQueries) {
+        this.newContactQueries = newContactQueries;
     }
 }

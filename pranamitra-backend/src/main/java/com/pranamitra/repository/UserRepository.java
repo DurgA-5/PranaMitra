@@ -14,8 +14,18 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByMobileNumber(String mobileNumber);
 
+    Optional<User> findByResetToken(String resetToken);
+
     boolean existsByEmail(String email);
 
     boolean existsByMobileNumber(String mobileNumber);
+
+    @org.springframework.data.jpa.repository.Query("""
+            SELECT u FROM User u
+            WHERE u.active = true
+            AND u.role.roleName = com.pranamitra.enums.RoleType.DONOR
+            AND u.id NOT IN (SELECT s.user.id FROM StudentDonor s)
+            """)
+    java.util.List<User> findAvailableUsersForDonor();
 
 }

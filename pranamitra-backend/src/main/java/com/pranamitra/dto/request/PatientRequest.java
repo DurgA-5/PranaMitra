@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import com.pranamitra.enums.BloodGroup;
 import com.pranamitra.enums.EmergencyLevel;
 import com.pranamitra.enums.Gender;
+import com.pranamitra.enums.RequestStatus;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -56,10 +57,13 @@ public class PatientRequest {
     private String pincode;
 
     @NotNull(message = "Required date is mandatory")
+    @jakarta.validation.constraints.FutureOrPresent(message = "Required date must be today or in the future")
     private LocalDate requiredDate;
 
     @NotNull(message = "Emergency level is required")
     private EmergencyLevel emergencyLevel;
+
+    private RequestStatus requestStatus;
 
     public PatientRequest() {
     }
@@ -183,4 +187,12 @@ public class PatientRequest {
     public void setEmergencyLevel(EmergencyLevel emergencyLevel) {
         this.emergencyLevel = emergencyLevel;
     }
+
+    public RequestStatus getRequestStatus() {
+        return requestStatus;
     }
+
+    public void setRequestStatus(RequestStatus requestStatus) {
+        this.requestStatus = requestStatus;
+    }
+}

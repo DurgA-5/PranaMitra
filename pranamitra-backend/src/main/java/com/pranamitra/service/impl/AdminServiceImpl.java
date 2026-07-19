@@ -18,19 +18,25 @@ import com.pranamitra.entity.BloodRequest;
 import com.pranamitra.entity.Patient;
 import com.pranamitra.entity.StudentDonor;
 import com.pranamitra.enums.RequestStatus;
+import com.pranamitra.enums.EmergencyLevel;
 import com.pranamitra.mapper.BloodRequestMapper;
 import com.pranamitra.mapper.PatientMapper;
 import com.pranamitra.mapper.StudentDonorMapper;
 import com.pranamitra.repository.BloodBankRepository;
 import com.pranamitra.repository.BloodRequestRepository;
+import com.pranamitra.repository.ContactQueryRepository;
 import com.pranamitra.repository.PatientRepository;
 import com.pranamitra.repository.StudentDonorRepository;
 import com.pranamitra.repository.UserRepository;
+import com.pranamitra.enums.ContactStatus;
 import com.pranamitra.service.AdminService;
 import com.pranamitra.service.BloodBankService;
+import com.pranamitra.service.StudentDonorService;
+import com.pranamitra.dto.request.StudentDonorRequest;
 import com.pranamitra.enums.BloodGroup;
 import com.pranamitra.enums.EmergencyLevel;
 import com.pranamitra.dto.response.report.CityReportResponse;
+import com.pranamitra.dto.response.AvailableUserResponse;
 @Service
 public class AdminServiceImpl implements AdminService {
 
@@ -39,6 +45,7 @@ public class AdminServiceImpl implements AdminService {
     private final PatientRepository patientRepository;
     private final BloodRequestRepository bloodRequestRepository;
     private final BloodBankRepository bloodBankRepository;
+    private final ContactQueryRepository contactQueryRepository;
 
     private final StudentDonorMapper studentDonorMapper;
     private final PatientMapper patientMapper;
@@ -46,6 +53,8 @@ public class AdminServiceImpl implements AdminService {
 
     // Blood Bank Service
     private final BloodBankService bloodBankService;
+    private final StudentDonorService studentDonorService;
+    private final com.pranamitra.service.NotificationService notificationService;
 
     public AdminServiceImpl(
             UserRepository userRepository,
@@ -53,20 +62,26 @@ public class AdminServiceImpl implements AdminService {
             PatientRepository patientRepository,
             BloodRequestRepository bloodRequestRepository,
             BloodBankRepository bloodBankRepository,
+            ContactQueryRepository contactQueryRepository,
             StudentDonorMapper studentDonorMapper,
             PatientMapper patientMapper,
             BloodRequestMapper bloodRequestMapper,
-            BloodBankService bloodBankService) {
+            BloodBankService bloodBankService,
+            StudentDonorService studentDonorService,
+            com.pranamitra.service.NotificationService notificationService) {
 
         this.userRepository = userRepository;
         this.studentDonorRepository = studentDonorRepository;
         this.patientRepository = patientRepository;
         this.bloodRequestRepository = bloodRequestRepository;
         this.bloodBankRepository = bloodBankRepository;
+        this.contactQueryRepository = contactQueryRepository;
         this.studentDonorMapper = studentDonorMapper;
         this.patientMapper = patientMapper;
         this.bloodRequestMapper = bloodRequestMapper;
         this.bloodBankService = bloodBankService;
+        this.studentDonorService = studentDonorService;
+        this.notificationService = notificationService;
     }
 
     // ==================================================
@@ -106,6 +121,14 @@ public class AdminServiceImpl implements AdminService {
         dashboard.setTotalBloodBanks(
                 bloodBankRepository.count());
 
+        dashboard.setEmergencyRequests(
+                bloodRequestRepository.findAll().stream()
+                        .filter(b -> b.getEmergencyLevel() == EmergencyLevel.CRITICAL || b.getEmergencyLevel() == EmergencyLevel.HIGH)
+                        .count());
+
+        dashboard.setNewContactQueries(
+                contactQueryRepository.countByStatus(ContactStatus.NEW));
+
         return dashboard;
     }
 
@@ -139,27 +162,41 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    public StudentDonorResponse verifyDonor(Long id) {
+    public StudentDonorResponse createDonor(StudentDonorRequest request) {
+        return studentDonorService.registerDonor(request);
+    }
 
+    @Override
+    public StudentDonorResponse verifyDonor(Long id) {
         StudentDonor donor = studentDonorRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Donor not found."));
 
-        donor.setVerified(true);
+        donor.setVerified(!donor.getVerified());
+        StudentDonor saved = studentDonorRepository.save(donor);
 
-        return studentDonorMapper.toResponse(
-                studentDonorRepository.save(donor));
+        String statusStr = saved.getVerified() ? "VERIFIED" : "UNVERIFIED";
+        notificationService.createNotification(saved.getUser(), "Profile Verified", 
+            "Your donor profile has been " + statusStr.toLowerCase() + " by the administrator.", "SUCCESS");
+
+        notificationService.createNotificationForRole(com.pranamitra.enums.RoleType.ADMIN, "Donor Verification Status", 
+            "Donor profile " + saved.getUser().getFirstName() + " " + saved.getUser().getLastName() + " status updated to: " + statusStr + ".", "INFO");
+
+        return studentDonorMapper.toResponse(saved);
     }
 
     @Override
     public StudentDonorResponse toggleDonorStatus(Long id) {
-
         StudentDonor donor = studentDonorRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Donor not found."));
 
         donor.setActive(!donor.getActive());
+        StudentDonor saved = studentDonorRepository.save(donor);
 
-        return studentDonorMapper.toResponse(
-                studentDonorRepository.save(donor));
+        String activeStr = saved.getActive() ? "activated" : "deactivated";
+        notificationService.createNotification(saved.getUser(), "Account Activated/Deactivated", 
+            "Your donor account has been " + activeStr + " by the administrator.", "INFO");
+
+        return studentDonorMapper.toResponse(saved);
     }
 
     @Override
@@ -172,6 +209,18 @@ public class AdminServiceImpl implements AdminService {
         }
 
         studentDonorRepository.deleteById(id);
+    }
+
+    @Override
+    public List<AvailableUserResponse> getAvailableUsers() {
+        List<AvailableUserResponse> availableUsers = new java.util.ArrayList<>();
+        for (com.pranamitra.entity.User user : userRepository.findAvailableUsersForDonor()) {
+            String firstName = user.getFirstName() != null ? user.getFirstName() : "";
+            String lastName = user.getLastName() != null ? user.getLastName() : "";
+            String fullName = (firstName + " " + lastName).trim();
+            availableUsers.add(new AvailableUserResponse(user.getId(), fullName, user.getEmail()));
+        }
+        return availableUsers;
     }
 
     // ==================================================
@@ -250,86 +299,90 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public BloodRequestResponse approveBloodRequest(Long id) {
-
         BloodRequest request =
                 bloodRequestRepository.findById(id)
                         .orElseThrow(() ->
                                 new RuntimeException("Blood Request not found."));
 
         if (request.getRequestStatus() == RequestStatus.COMPLETED) {
-
-            throw new RuntimeException(
-                    "Completed request cannot be approved.");
-
+            throw new RuntimeException("Completed request cannot be approved.");
         }
 
         request.setRequestStatus(RequestStatus.APPROVED);
+        BloodRequest saved = bloodRequestRepository.save(request);
 
-        return bloodRequestMapper.toResponse(
-                bloodRequestRepository.save(request));
+        // Notify Patient
+        notificationService.createNotification(saved.getPatient().getUser(), "Request Under Review", 
+            "Your blood request " + saved.getRequestNumber() + " status is now approved and under review.", "SUCCESS");
+
+        return bloodRequestMapper.toResponse(saved);
     }
 
     @Override
     public BloodRequestResponse rejectBloodRequest(Long id) {
-
         BloodRequest request =
                 bloodRequestRepository.findById(id)
                         .orElseThrow(() ->
                                 new RuntimeException("Blood Request not found."));
 
         if (request.getRequestStatus() == RequestStatus.COMPLETED) {
-
-            throw new RuntimeException(
-                    "Completed request cannot be rejected.");
-
+            throw new RuntimeException("Completed request cannot be rejected.");
         }
 
         request.setRequestStatus(RequestStatus.REJECTED);
+        BloodRequest saved = bloodRequestRepository.save(request);
 
-        return bloodRequestMapper.toResponse(
-                bloodRequestRepository.save(request));
+        // Notify Patient
+        notificationService.createNotification(saved.getPatient().getUser(), "Blood Request Rejected", 
+            "Your blood request " + saved.getRequestNumber() + " has been rejected by the administrator.", "DANGER");
+
+        return bloodRequestMapper.toResponse(saved);
     }
 
     @Override
     public BloodRequestResponse completeBloodRequest(Long id) {
-
         BloodRequest request =
                 bloodRequestRepository.findById(id)
                         .orElseThrow(() ->
                                 new RuntimeException("Blood Request not found."));
 
         if (request.getRequestStatus() != RequestStatus.APPROVED) {
-
-            throw new RuntimeException(
-                    "Only APPROVED requests can be completed.");
-
+            throw new RuntimeException("Only APPROVED requests can be completed.");
         }
 
         request.setRequestStatus(RequestStatus.COMPLETED);
+        BloodRequest saved = bloodRequestRepository.save(request);
 
-        return bloodRequestMapper.toResponse(
-                bloodRequestRepository.save(request));
+        // Notify Patient
+        notificationService.createNotification(saved.getPatient().getUser(), "Blood Request Completed", 
+            "Your blood request " + saved.getRequestNumber() + " has been completed successfully.", "SUCCESS");
+
+        // Notify Admin
+        notificationService.createNotificationForRole(com.pranamitra.enums.RoleType.ADMIN, "Blood Request Completed", 
+            "Blood request " + saved.getRequestNumber() + " has been marked as COMPLETED.", "SUCCESS");
+
+        return bloodRequestMapper.toResponse(saved);
     }
 
     @Override
     public BloodRequestResponse cancelBloodRequest(Long id) {
-
         BloodRequest request =
                 bloodRequestRepository.findById(id)
                         .orElseThrow(() ->
                                 new RuntimeException("Blood Request not found."));
 
         if (request.getRequestStatus() == RequestStatus.COMPLETED) {
-
-            throw new RuntimeException(
-                    "Completed request cannot be cancelled.");
-
+            throw new RuntimeException("Completed request cannot be cancelled.");
         }
 
         request.setRequestStatus(RequestStatus.CANCELLED);
+        BloodRequest saved = bloodRequestRepository.save(request);
 
-        return bloodRequestMapper.toResponse(
-                bloodRequestRepository.save(request));
+        // Notify Patient
+        notificationService.createNotification(saved.getPatient().getUser(), "Blood Request Cancelled", 
+            "Your blood request " + saved.getRequestNumber() + " has been cancelled.", "INFO");
+
+        return bloodRequestMapper.toResponse(saved);
     }
 
     // ==================================================

@@ -6,6 +6,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.pranamitra.dto.request.BloodBankRequest;
+import com.pranamitra.dto.request.StudentDonorRequest;
+import com.pranamitra.dto.response.AvailableUserResponse;
 import com.pranamitra.dto.response.BloodBankResponse;
 import com.pranamitra.dto.response.BloodRequestResponse;
 import com.pranamitra.dto.response.DashboardResponse;
@@ -49,6 +51,19 @@ public class AdminController {
 
         return ResponseEntity.ok(
                 adminService.getAllDonors());
+    }
+
+    @PostMapping("/donors")
+    public ResponseEntity<StudentDonorResponse> createDonor(
+            @Valid @RequestBody StudentDonorRequest request) {
+
+        return ResponseEntity.status(201)
+                .body(adminService.createDonor(request));
+    }
+
+    @GetMapping("/available-users")
+    public ResponseEntity<List<AvailableUserResponse>> getAvailableUsers() {
+        return ResponseEntity.ok(adminService.getAvailableUsers());
     }
 
     @GetMapping("/donors/{id:\\d+}")

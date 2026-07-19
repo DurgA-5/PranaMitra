@@ -24,8 +24,7 @@ public class UserRequest {
     @Pattern(regexp = "^[6-9]\\d{9}$", message = "Enter a valid 10-digit mobile number")
     private String mobileNumber;
 
-    @NotBlank(message = "Password is required")
-    @Size(min = 6, max = 20)
+    @Size(max = 20)
     private String password;
 
     private RoleType roleName;

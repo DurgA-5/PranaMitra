@@ -12,7 +12,6 @@ import jakarta.validation.constraints.Size;
 
 public class BloodRequestRequest {
 
-    @NotNull(message = "Patient ID is required")
     private Long patientId;
 
     @NotNull(message = "Blood Group is required")

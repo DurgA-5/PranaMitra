@@ -3,6 +3,7 @@ package com.pranamitra.service;
 import java.util.List;
 
 import com.pranamitra.dto.request.BloodBankRequest;
+import com.pranamitra.dto.request.StudentDonorRequest;
 import com.pranamitra.dto.response.BloodBankResponse;
 import com.pranamitra.dto.response.BloodRequestResponse;
 import com.pranamitra.dto.response.DashboardResponse;
@@ -12,6 +13,7 @@ import com.pranamitra.dto.response.report.BloodGroupReportResponse;
 import com.pranamitra.dto.response.report.CityReportResponse;
 import com.pranamitra.dto.response.report.EmergencyLevelReportResponse;
 import com.pranamitra.dto.response.report.RequestStatusReportResponse;
+import com.pranamitra.dto.response.AvailableUserResponse;
 
 public interface AdminService {
 
@@ -29,11 +31,15 @@ public interface AdminService {
 
     StudentDonorResponse getDonorById(Long id);
 
+    StudentDonorResponse createDonor(StudentDonorRequest request);
+
     StudentDonorResponse verifyDonor(Long id);
 
     StudentDonorResponse toggleDonorStatus(Long id);
 
     void deleteDonor(Long id);
+
+    List<AvailableUserResponse> getAvailableUsers();
 
     // ==================================================
     // Patient Management

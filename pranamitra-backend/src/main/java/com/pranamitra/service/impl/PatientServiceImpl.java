@@ -79,6 +79,9 @@ public class PatientServiceImpl implements PatientService {
         patient.setPincode(request.getPincode());
         patient.setRequiredDate(request.getRequiredDate());
         patient.setEmergencyLevel(request.getEmergencyLevel());
+        if (request.getRequestStatus() != null) {
+            patient.setRequestStatus(request.getRequestStatus());
+        }
 
         Patient updatedPatient = patientRepository.save(patient);
 

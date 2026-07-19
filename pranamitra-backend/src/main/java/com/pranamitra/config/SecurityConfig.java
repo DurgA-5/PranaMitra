@@ -1,16 +1,21 @@
 package com.pranamitra.config;
 
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.pranamitra.security.JwtAuthenticationEntryPoint;
 import com.pranamitra.security.JwtAuthenticationFilter;
@@ -30,7 +35,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(
+    AuthenticationManager authenticationManager(
             AuthenticationConfiguration configuration)
             throws Exception {
 
@@ -38,54 +43,68 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(
-            HttpSecurity http)
+    SecurityFilterChain securityFilterChain(HttpSecurity http)
             throws Exception {
 
         http
-                .csrf(csrf -> csrf.disable())
 
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(
-                                SessionCreationPolicy.STATELESS))
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
 
-                .exceptionHandling(exception ->
-                        exception.authenticationEntryPoint(
-                                jwtAuthenticationEntryPoint))
+            .csrf(csrf -> csrf.disable())
 
-                .authorizeHttpRequests(auth -> auth
+            .sessionManagement(session ->
+                    session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                		.requestMatchers(
+            .exceptionHandling(exception ->
+                    exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
 
-                		        // Public Authentication
-                		        "/api/auth/**",
+            .authorizeHttpRequests(auth -> auth
 
-                		        // Public User Registration
-                		        "/api/users/register",
+                    .requestMatchers(
+                            "/api/auth/**",
+                            "/api/users/register",
+                            "/api/contact",
+                            "/swagger-ui/**",
+                            "/swagger-ui.html",
+                            "/v3/api-docs/**",
+                            "/v3/api-docs",
+                            "/actuator/**")
+                    .permitAll()
 
-                		        // Swagger
-                		        "/swagger-ui/**",
-                		        "/swagger-ui.html",
-                		        "/v3/api-docs/**",
-                		        "/v3/api-docs",
+                    .requestMatchers("/api/admin/**")
+                    .hasRole("ADMIN")
 
-                		        // Actuator
-                		        "/actuator/**"
+                    .anyRequest()
+                    .authenticated())
 
-                		)
-                		.permitAll()
-
-                        .requestMatchers("/api/admin/**")
-                        .hasRole("ADMIN")
-
-                        .anyRequest()
-                        .authenticated())
-
-                .addFilterBefore(
-                        jwtAuthenticationFilter,
-                        UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(
+                    jwtAuthenticationFilter,
+                    UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
+    @Bean
+    CorsConfigurationSource corsConfigurationSource() {
+
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        configuration.setAllowedOrigins(
+                List.of("http://localhost:5173", "http://localhost:5174"));
+
+        configuration.setAllowedMethods(
+                List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+
+        configuration.setAllowedHeaders(
+                List.of("*"));
+
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
+
+        source.registerCorsConfiguration("/**", configuration);
+
+        return source;
+    }
 }

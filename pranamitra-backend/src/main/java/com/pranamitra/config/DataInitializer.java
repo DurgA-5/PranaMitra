@@ -3,29 +3,63 @@ package com.pranamitra.config;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.pranamitra.entity.Role;
+import com.pranamitra.entity.User;
 import com.pranamitra.enums.RoleType;
 import com.pranamitra.repository.RoleRepository;
+import com.pranamitra.repository.UserRepository;
 
 @Configuration
 public class DataInitializer {
 
     @Bean
-    CommandLineRunner initRoles(RoleRepository roleRepository) {
+    CommandLineRunner initData(
+            RoleRepository roleRepository,
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder) {
 
         return args -> {
 
+            // Create Roles
             createRole(roleRepository, RoleType.ADMIN, "System Administrator");
             createRole(roleRepository, RoleType.DONOR, "Blood Donor");
             createRole(roleRepository, RoleType.PATIENT, "Blood Request User");
 
+            // Create Default Admin
+            if (!userRepository.existsByEmail("admin@pranamitra.com")) {
+
+                Role adminRole = roleRepository
+                        .findByRoleName(RoleType.ADMIN)
+                        .orElseThrow(() -> new RuntimeException("Admin Role Not Found"));
+
+                User admin = new User();
+
+                admin.setFirstName("System");
+                admin.setLastName("Administrator");
+                admin.setEmail("admin@pranamitra.com");
+                admin.setMobileNumber("9999999999");
+                admin.setPassword(passwordEncoder.encode("Admin@123"));
+                admin.setRole(adminRole);
+                admin.setActive(true);
+                admin.setVerified(true);
+
+                userRepository.save(admin);
+
+                System.out.println("=======================================");
+                System.out.println(" DEFAULT ADMIN CREATED");
+                System.out.println(" Email    : admin@pranamitra.com");
+                System.out.println(" Password : Admin@123");
+                System.out.println("=======================================");
+            }
         };
     }
 
-    private void createRole(RoleRepository repository,
-                            RoleType roleType,
-                            String description) {
+    private void createRole(
+            RoleRepository repository,
+            RoleType roleType,
+            String description) {
 
         if (repository.findByRoleName(roleType).isEmpty()) {
 
@@ -38,5 +72,4 @@ public class DataInitializer {
             repository.save(role);
         }
     }
-
 }

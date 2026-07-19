@@ -71,6 +71,9 @@ public class StudentDonorMapper {
         response.setPincode(donor.getPincode());
         response.setLastDonationDate(donor.getLastDonationDate());
         response.setAvailableToDonate(donor.getAvailableToDonate());
+        response.setVerified(donor.getVerified());
+        response.setActive(donor.getActive());
+        response.setCreatedAt(donor.getCreatedAt());
 
         return response;
     }

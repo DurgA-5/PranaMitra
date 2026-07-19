@@ -7,12 +7,21 @@ import com.pranamitra.enums.BloodGroup;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 
 public class StudentDonorRequest {
 
-    // ADD THIS
-    @NotNull(message = "User Id is required")
     private Long userId;
+
+    @NotBlank(message = "Full Name is required")
+    private String fullName;
+
+    @NotBlank(message = "Email is required")
+    private String email;
+
+    @NotBlank(message = "Phone Number is required")
+    @Pattern(regexp = "^[0-9]{10}$", message = "Phone Number must be exactly 10 digits")
+    private String mobileNumber;
 
     @NotNull(message = "Blood Group is required")
     private BloodGroup bloodGroup;
@@ -176,5 +185,29 @@ public class StudentDonorRequest {
 
     public void setAvailableToDonate(Boolean availableToDonate) {
         this.availableToDonate = availableToDonate;
+    }
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getMobileNumber() {
+        return mobileNumber;
+    }
+
+    public void setMobileNumber(String mobileNumber) {
+        this.mobileNumber = mobileNumber;
     }
 }
