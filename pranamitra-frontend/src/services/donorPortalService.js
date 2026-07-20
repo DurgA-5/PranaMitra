@@ -61,6 +61,11 @@ const donorPortalService = {
     return response.data?.data ?? response.data;
   },
 
+  getMyBloodRequests: async (userId) => {
+    const response = await api.get(`/donor-portal/my-requests/${userId}`);
+    return response.data?.data ?? response.data;
+  },
+
   getNotifications: async (userId) => {
     const response = await api.get(`/notifications/user/${userId}`);
     return response.data?.data ?? response.data;

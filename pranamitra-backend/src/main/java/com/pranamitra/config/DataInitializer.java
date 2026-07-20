@@ -27,32 +27,34 @@ public class DataInitializer {
             createRole(roleRepository, RoleType.DONOR, "Blood Donor");
             createRole(roleRepository, RoleType.PATIENT, "Blood Request User");
 
-            // Create Default Admin
-            if (!userRepository.existsByEmail("admin@pranamitra.com")) {
+            // Create or Update Default Admin
+            User admin = userRepository.findByEmail("admin@pranamitra.com").orElseGet(() -> {
+                User u = new User();
+                u.setEmail("admin@pranamitra.com");
+                return u;
+            });
 
-                Role adminRole = roleRepository
-                        .findByRoleName(RoleType.ADMIN)
-                        .orElseThrow(() -> new RuntimeException("Admin Role Not Found"));
+            Role adminRole = roleRepository
+                    .findByRoleName(RoleType.ADMIN)
+                    .orElseThrow(() -> new RuntimeException("Admin Role Not Found"));
 
-                User admin = new User();
-
-                admin.setFirstName("System");
-                admin.setLastName("Administrator");
-                admin.setEmail("admin@pranamitra.com");
+            admin.setFirstName("System");
+            admin.setLastName("Administrator");
+            if (admin.getMobileNumber() == null) {
                 admin.setMobileNumber("9999999999");
-                admin.setPassword(passwordEncoder.encode("Admin@123"));
-                admin.setRole(adminRole);
-                admin.setActive(true);
-                admin.setVerified(true);
-
-                userRepository.save(admin);
-
-                System.out.println("=======================================");
-                System.out.println(" DEFAULT ADMIN CREATED");
-                System.out.println(" Email    : admin@pranamitra.com");
-                System.out.println(" Password : Admin@123");
-                System.out.println("=======================================");
             }
+            admin.setPassword(passwordEncoder.encode("Admin@123"));
+            admin.setRole(adminRole);
+            admin.setActive(true);
+            admin.setVerified(true);
+
+            userRepository.save(admin);
+
+            System.out.println("=======================================");
+            System.out.println(" DEFAULT ADMIN SYNCHRONIZED");
+            System.out.println(" Email    : admin@pranamitra.com");
+            System.out.println(" Password : Admin@123");
+            System.out.println("=======================================");
         };
     }
 

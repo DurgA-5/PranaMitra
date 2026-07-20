@@ -1,31 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
-import { Activity, Search, X, CheckCircle, Circle, Clock, RefreshCw } from "lucide-react";
+import { Activity, Search, X, RefreshCw } from "lucide-react";
 import patientPortalService from "../../services/patientPortalService";
 import { getUserId } from "../../utils/token";
 import EmptyState from "../../components/common/EmptyState";
+import RequestTimeline from "../../components/ui/RequestTimeline";
+import PriorityBadge from "../../components/ui/PriorityBadge";
 
 const BLOOD_GROUPS = {
   A_POSITIVE: "A+", A_NEGATIVE: "A-", B_POSITIVE: "B+", B_NEGATIVE: "B-",
   AB_POSITIVE: "AB+", AB_NEGATIVE: "AB-", O_POSITIVE: "O+", O_NEGATIVE: "O-",
 };
-
-const TIMELINE_STEPS = [
-  { status: "PENDING",   label: "Request Submitted",  desc: "Your blood request has been received and is under review." },
-  { status: "APPROVED",  label: "Donor Being Matched", desc: "Your request is approved. A compatible donor is being matched." },
-  { status: "COMPLETED", label: "Donation Completed",  desc: "A donor has completed the blood donation. Thank you!" },
-];
-
-const STATUS_ORDER = { PENDING: 0, APPROVED: 1, COMPLETED: 2, CANCELLED: -1, REJECTED: -1 };
-
-function getStepState(stepStatus, currentStatus) {
-  if (currentStatus === "CANCELLED" || currentStatus === "REJECTED") return "cancelled";
-  const stepIndex = STATUS_ORDER[stepStatus] ?? 0;
-  const currentIndex = STATUS_ORDER[currentStatus] ?? 0;
-  if (stepIndex < currentIndex) return "done";
-  if (stepIndex === currentIndex) return "active";
-  return "upcoming";
-}
 
 function TrackRequest() {
   const userId = getUserId();
@@ -39,10 +24,13 @@ function TrackRequest() {
     try {
       setLoading(true);
       const data = await patientPortalService.getMyBloodRequests(userId);
-      setRequests(Array.isArray(data) ? data : []);
+      const list = Array.isArray(data) ? data : [];
+      setRequests(list);
       if (selected) {
-        const updated = data.find((r) => r.id === selected.id);
+        const updated = list.find((r) => r.id === selected.id);
         if (updated) setSelected(updated);
+      } else if (list.length > 0) {
+        setSelected(list[0]);
       }
     } catch (err) {
       console.error(err);
@@ -64,29 +52,30 @@ function TrackRequest() {
   }, [requests, search]);
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Activity className="text-red-500" size={24} /> Track Request
+          <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-2 tracking-tight">
+            <Activity className="text-red-500" size={26} /> Live Request Timeline Tracker
           </h1>
-          <p className="text-slate-500 text-sm mt-1">Click any request to see its live status timeline.</p>
+          <p className="text-slate-500 text-sm mt-1">
+            Real-time status tracking for emergency blood request processing stages.
+          </p>
         </div>
-        <button onClick={fetchRequests} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:border-red-300 hover:text-red-600 text-sm font-medium transition shadow-sm">
-          <RefreshCw size={14} className={loading ? "animate-spin" : ""} /> Refresh
+        <button onClick={fetchRequests} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:border-red-300 hover:text-red-600 text-sm font-medium transition shadow-sm shrink-0">
+          <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> Refresh Live Status
         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Left: Request List */}
         <div className="lg:col-span-2 space-y-3">
-          {/* Search */}
-          <div className="flex items-center gap-2 border border-slate-200 rounded-xl px-3 bg-white shadow-sm">
-            <Search size={15} className="text-slate-400" />
+          <div className="flex items-center gap-2 border border-slate-200 rounded-xl px-3.5 bg-white shadow-sm">
+            <Search size={16} className="text-slate-400" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search requests..."
+              placeholder="Search request # or blood group..."
               className="flex-1 py-2.5 bg-transparent text-sm outline-none text-slate-700"
             />
             {search && <button onClick={() => setSearch("")}><X size={14} className="text-slate-400 hover:text-slate-600" /></button>}
@@ -94,133 +83,90 @@ function TrackRequest() {
 
           {loading ? (
             <div className="space-y-2">
-              {[...Array(4)].map((_, i) => <div key={i} className="h-16 bg-white rounded-xl animate-pulse" />)}
+              {[...Array(4)].map((_, i) => <div key={i} className="h-20 bg-white rounded-2xl animate-pulse" />)}
             </div>
           ) : filtered.length === 0 ? (
-            <EmptyState title="No Requests" description="No requests found to track." icon={Activity} />
+            <EmptyState title="No Requests" description="No blood requests found to track." icon={Activity} />
           ) : (
             filtered.map((req) => (
               <button
                 key={req.id}
                 onClick={() => setSelected(req)}
-                className={`w-full text-left p-4 rounded-xl border transition-all duration-200 ${
+                className={`w-full text-left p-4 rounded-2xl border transition-all duration-200 ${
                   selected?.id === req.id
-                    ? "border-red-300 bg-red-50 shadow-md"
+                    ? "border-red-500 bg-red-50/50 shadow-md ring-2 ring-red-500/10"
                     : "border-slate-200 bg-white hover:border-red-200 hover:shadow-sm"
                 }`}
               >
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center justify-between gap-2 mb-1">
                   <span className="font-mono text-xs font-bold text-slate-600">{req.requestNumber}</span>
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-lg ${
+                  <PriorityBadge priority={req.emergencyLevel} size="sm" />
+                </div>
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-sm font-extrabold text-slate-800">
+                    🩸 {BLOOD_GROUPS[req.bloodGroup] ?? req.bloodGroup} · {req.unitsRequired} Unit(s)
+                  </p>
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
                     req.requestStatus === "COMPLETED" ? "bg-green-100 text-green-700" :
                     req.requestStatus === "APPROVED"  ? "bg-blue-100 text-blue-700" :
                     req.requestStatus === "CANCELLED" ? "bg-slate-100 text-slate-500" :
-                    req.requestStatus === "REJECTED"  ? "bg-red-100 text-red-700" :
                     "bg-amber-100 text-amber-700"
                   }`}>{req.requestStatus}</span>
                 </div>
-                <p className="text-sm font-semibold text-slate-800 mt-1">
-                  🩸 {BLOOD_GROUPS[req.bloodGroup] ?? req.bloodGroup} · {req.unitsRequired} unit{req.unitsRequired > 1 ? "s" : ""}
-                </p>
-                <p className="text-xs text-slate-500 mt-0.5">Required: {req.requiredDate}</p>
               </button>
             ))
           )}
         </div>
 
-        {/* Right: Timeline */}
+        {/* Right: Live Timeline Panel */}
         <div className="lg:col-span-3">
           {!selected ? (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center h-full min-h-[300px] text-slate-400">
-              <Activity size={48} className="mb-3 opacity-30" />
-              <p className="text-sm font-medium">Select a request to view its timeline</p>
+            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center h-full min-h-[350px] text-slate-400 p-6">
+              <Activity size={48} className="mb-3 opacity-30 text-red-500" />
+              <p className="text-sm font-bold text-slate-600">Select a blood request to view live timeline progress</p>
             </div>
           ) : (
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-              {/* Header */}
-              <div className="mb-6 pb-4 border-b border-slate-100">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Tracking</p>
-                <h3 className="text-lg font-bold text-slate-800">{selected.requestNumber}</h3>
-                <div className="flex flex-wrap gap-3 mt-2 text-sm text-slate-600">
-                  <span>🩸 {BLOOD_GROUPS[selected.bloodGroup] ?? selected.bloodGroup}</span>
-                  <span>· {selected.unitsRequired} unit{selected.unitsRequired > 1 ? "s" : ""}</span>
-                  <span>· {selected.emergencyLevel} priority</span>
+            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 sm:p-8 space-y-6">
+              {/* Request Header */}
+              <div className="pb-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <span className="text-xs font-bold font-mono text-slate-400 uppercase tracking-wider block">Live Timeline Tracking</span>
+                  <h3 className="text-xl font-extrabold text-slate-800 mt-0.5">{selected.requestNumber}</h3>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span className="bg-red-50 text-red-700 font-extrabold text-xs px-3 py-1 rounded-xl border border-red-100">
+                    🩸 {BLOOD_GROUPS[selected.bloodGroup] ?? selected.bloodGroup} ({selected.unitsRequired} Units)
+                  </span>
+                  <PriorityBadge priority={selected.emergencyLevel} size="md" />
                 </div>
               </div>
 
-              {/* Cancelled / Rejected Banner */}
+              {/* Cancelled Banner */}
               {(selected.requestStatus === "CANCELLED" || selected.requestStatus === "REJECTED") ? (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-4">
-                    <X size={32} className="text-red-400" />
+                <div className="flex flex-col items-center justify-center py-8 text-center bg-slate-50 rounded-2xl border border-slate-200">
+                  <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mb-3 text-red-600 font-bold">
+                    <X size={32} />
                   </div>
-                  <h4 className="font-bold text-slate-800 text-lg">Request {selected.requestStatus}</h4>
-                  <p className="text-slate-500 text-sm mt-2 max-w-xs">
+                  <h4 className="font-extrabold text-slate-800 text-lg">Request {selected.requestStatus}</h4>
+                  <p className="text-slate-500 text-xs mt-1 max-w-xs">
                     {selected.requestStatus === "CANCELLED"
-                      ? "This request was cancelled. You may submit a new request if needed."
-                      : "This request was rejected. Please contact our support team for more information."}
+                      ? "This request was cancelled. You may raise a new emergency request anytime."
+                      : "This request was reviewed and rejected by admin desk."}
                   </p>
                 </div>
               ) : (
-                /* Timeline */
-                <div className="space-y-0">
-                  {TIMELINE_STEPS.map((step, idx) => {
-                    const state = getStepState(step.status, selected.requestStatus);
-                    const isLast = idx === TIMELINE_STEPS.length - 1;
-                    return (
-                      <div key={step.status} className="flex gap-4">
-                        {/* Icon + Line */}
-                        <div className="flex flex-col items-center">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border-2 transition-all ${
-                            state === "done"   ? "border-green-500 bg-green-500" :
-                            state === "active" ? "border-red-500 bg-red-50" :
-                            "border-slate-200 bg-white"
-                          }`}>
-                            {state === "done" ? (
-                              <CheckCircle size={20} className="text-white" />
-                            ) : state === "active" ? (
-                              <Clock size={18} className="text-red-500 animate-pulse" />
-                            ) : (
-                              <Circle size={18} className="text-slate-300" />
-                            )}
-                          </div>
-                          {!isLast && (
-                            <div className={`w-0.5 h-12 mt-1 ${state === "done" ? "bg-green-300" : "bg-slate-200"}`} />
-                          )}
-                        </div>
-
-                        {/* Content */}
-                        <div className={`pb-8 flex-1 ${isLast ? "pb-0" : ""}`}>
-                          <h4 className={`font-bold text-sm ${
-                            state === "done" ? "text-green-700" :
-                            state === "active" ? "text-red-600" :
-                            "text-slate-400"
-                          }`}>{step.label}</h4>
-                          <p className={`text-xs mt-0.5 leading-relaxed ${
-                            state === "upcoming" ? "text-slate-300" : "text-slate-500"
-                          }`}>{step.desc}</p>
-                          {state === "active" && (
-                            <span className="inline-block mt-1.5 text-xs bg-red-50 text-red-600 font-bold px-2.5 py-0.5 rounded-full border border-red-100 animate-pulse">
-                              In Progress
-                            </span>
-                          )}
-                          {state === "done" && (
-                            <span className="inline-block mt-1.5 text-xs bg-green-50 text-green-700 font-bold px-2.5 py-0.5 rounded-full border border-green-100">
-                              ✓ Completed
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                /* Animated 7-Stage Request Timeline */
+                <div className="pt-2">
+                  <RequestTimeline status={selected.requestStatus} />
                 </div>
               )}
 
               {/* Remarks */}
               {selected.remarks && (
-                <div className="mt-6 bg-amber-50 border border-amber-100 rounded-xl p-3.5">
-                  <p className="text-xs font-bold text-amber-600 uppercase tracking-wider mb-1">Notes</p>
-                  <p className="text-sm text-amber-800">{selected.remarks}</p>
+                <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 text-xs">
+                  <span className="font-bold text-amber-700 uppercase tracking-wider block mb-1">Additional Emergency Notes</span>
+                  <p className="text-amber-900 font-medium">{selected.remarks}</p>
                 </div>
               )}
             </div>

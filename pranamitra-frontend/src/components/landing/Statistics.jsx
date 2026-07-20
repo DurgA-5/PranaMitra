@@ -48,21 +48,20 @@ function Statistics() {
         const responseData = await authService.getStats();
         // Set stats or merge with defaults if any returns 0
         setStats({
-          totalDonors: responseData.totalDonors || 148,
-          totalPatients: responseData.totalPatients || 92,
-          totalBloodRequests: responseData.totalBloodRequests || 215,
-          totalBloodBanks: responseData.totalBloodBanks || 16,
-          livesSaved: responseData.livesSaved || 74,
+          totalDonors: responseData?.totalDonors ?? 0,
+          totalPatients: responseData?.totalPatients ?? 0,
+          totalBloodRequests: responseData?.totalBloodRequests ?? 0,
+          totalBloodBanks: responseData?.totalBloodBanks ?? 0,
+          livesSaved: responseData?.livesSaved ?? 0,
         });
       } catch (err) {
-        console.error("Failed to load statistics from backend, using fallbacks:", err);
-        // Fallback to high-quality mockup metrics matching system state
+        console.error("Failed to load statistics from backend:", err);
         setStats({
-          totalDonors: 148,
-          totalPatients: 92,
-          totalBloodRequests: 215,
-          totalBloodBanks: 16,
-          livesSaved: 74,
+          totalDonors: 0,
+          totalPatients: 0,
+          totalBloodRequests: 0,
+          totalBloodBanks: 0,
+          livesSaved: 0,
         });
       } finally {
         setLoading(false);

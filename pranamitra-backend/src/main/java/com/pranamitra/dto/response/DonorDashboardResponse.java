@@ -15,6 +15,7 @@ public class DonorDashboardResponse {
     private Long totalDonations;
     private Long acceptedRequests;
     private Long pendingRequests;
+    private Long requestsRaised;
 
     public DonorDashboardResponse() {
     }
@@ -89,5 +90,13 @@ public class DonorDashboardResponse {
 
     public void setPendingRequests(Long pendingRequests) {
         this.pendingRequests = pendingRequests;
+    }
+
+    public Long getRequestsRaised() {
+        return requestsRaised;
+    }
+
+    public void setRequestsRaised(Long requestsRaised) {
+        this.requestsRaised = requestsRaised;
     }
 }

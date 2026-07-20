@@ -29,9 +29,11 @@ const ServerError = lazy(() => import("../pages/error/ServerError"));
 // Donor Portal Pages - Lazy Loaded
 const DonorDashboard = lazy(() => import("../pages/donor/Dashboard"));
 const DonorProfile = lazy(() => import("../pages/donor/Profile"));
+const DonorAvailability = lazy(() => import("../pages/donor/Availability"));
 const DonorMatchingRequests = lazy(() => import("../pages/donor/MatchingRequests"));
 const DonorAcceptedRequests = lazy(() => import("../pages/donor/AcceptedRequests"));
 const DonorHistory = lazy(() => import("../pages/donor/History"));
+const DonorLivesImpacted = lazy(() => import("../pages/donor/LivesImpacted"));
 const DonorNotifications = lazy(() => import("../pages/donor/Notifications"));
 const DonorCompleteProfile = lazy(() => import("../pages/donor/CompleteProfile"));
 
@@ -92,10 +94,17 @@ function AppRouter() {
           >
             <Route index element={<DonorDashboard />} />
             <Route path="profile" element={<DonorProfile />} />
+            <Route path="availability" element={<DonorAvailability />} />
             <Route path="matching" element={<DonorMatchingRequests />} />
             <Route path="accepted" element={<DonorAcceptedRequests />} />
             <Route path="history" element={<DonorHistory />} />
+            <Route path="lives-impacted" element={<DonorLivesImpacted />} />
+            <Route path="request-blood" element={<PatientRequestBlood />} />
+            <Route path="emergency-request" element={<PatientRequestBlood />} />
+            <Route path="my-requests" element={<PatientMyRequests />} />
+            <Route path="blood-banks" element={<PatientNearbyBloodBanks />} />
             <Route path="notifications" element={<DonorNotifications />} />
+            <Route path="settings" element={<PatientSettings />} />
           </Route>
 
           {/* Donor Complete Profile (outside layout) */}

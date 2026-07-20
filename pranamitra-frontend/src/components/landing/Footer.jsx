@@ -1,6 +1,6 @@
 import { Mail, Phone, MapPin } from "lucide-react";
 import { FaLinkedin, FaGithub } from "react-icons/fa";
-import logo from "../../assets/logos/logo.png";
+import PranaMitraBrand from "../common/PranaMitraBrand";
 
 function Footer() {
   const handleNavClick = (e, href) => {
@@ -26,17 +26,8 @@ function Footer() {
         
         {/* Left Column (5 cols) */}
         <div className="lg:col-span-5 space-y-5">
-          <div className="flex items-center gap-3">
-            <img src={logo} alt="Logo" className="h-10 w-auto rounded bg-white p-0.5" />
-            <div>
-              <h3 className="text-xl font-bold tracking-tight text-white">
-                Prana<span className="text-red-500">Mitra</span>
-              </h3>
-              <p className="text-[10px] tracking-wider text-slate-400 font-bold uppercase mt-0.5">
-                Blood Management System
-              </p>
-            </div>
-          </div>
+          <PranaMitraBrand size="responsive" showSubtitle={true} subtitleText="Blood Management System" darkBg={true} />
+
 
           <p className="text-xs md:text-sm text-slate-400 font-medium max-w-sm leading-relaxed">
             PranaMitra is a secure Blood Management System connecting student donors, patients, and registered blood banks to enable faster emergency blood support and efficient donor management.

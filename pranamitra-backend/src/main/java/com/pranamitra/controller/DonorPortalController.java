@@ -125,10 +125,25 @@ public class DonorPortalController {
                         donorPortalService.getDonationHistory(userId)));
     }
 
+    @GetMapping("/my-requests/{userId}")
+    public ResponseEntity<ApiResponse<List<BloodRequestResponse>>> getMyBloodRequests(@PathVariable Long userId) {
+        return ResponseEntity.ok(
+                new ApiResponse<>(true, "My blood requests fetched successfully",
+                        donorPortalService.getMyBloodRequests(userId)));
+    }
+
     @GetMapping("/notifications/{userId}")
     public ResponseEntity<ApiResponse<List<String>>> getNotifications(@PathVariable Long userId) {
         return ResponseEntity.ok(
                 new ApiResponse<>(true, "Notifications fetched successfully",
                         donorPortalService.getNotifications(userId)));
     }
+
+    @GetMapping("/lives-impacted/{userId}")
+    public ResponseEntity<ApiResponse<DonorDashboardResponse>> getLivesImpacted(@PathVariable Long userId) {
+        return ResponseEntity.ok(
+                new ApiResponse<>(true, "Lives impacted stats fetched successfully",
+                        donorPortalService.getLivesImpacted(userId)));
+    }
 }
+

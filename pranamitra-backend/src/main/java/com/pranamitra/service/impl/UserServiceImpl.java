@@ -49,14 +49,20 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("Mobile number already exists.");
         }
 
+        RoleType targetRole = request.getRoleName();
+        if (targetRole == null) {
+            targetRole = RoleType.PATIENT;
+        }
+        final RoleType roleToFetch = targetRole;
+
         // Prevent public ADMIN registration
-        if (request.getRoleName() == RoleType.ADMIN) {
+        if (roleToFetch == RoleType.ADMIN) {
             throw new RuntimeException("Administrator registration is not allowed.");
         }
 
         // Fetch role
-        Role role = roleRepository.findByRoleName(request.getRoleName())
-                .orElseThrow(() -> new RuntimeException("Role not found."));
+        Role role = roleRepository.findByRoleName(roleToFetch)
+                .orElseThrow(() -> new RuntimeException("Role not found: " + roleToFetch));
 
         // Validate password for registration
         if (request.getPassword() == null || request.getPassword().trim().isEmpty()) {

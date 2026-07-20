@@ -34,6 +34,7 @@ import jakarta.validation.Valid;
 public class AuthController {
 
     private final AuthService authService;
+    private final com.pranamitra.service.UserService userService;
     private final StudentDonorRepository studentDonorRepository;
     private final PatientRepository patientRepository;
     private final BloodRequestRepository bloodRequestRepository;
@@ -42,12 +43,14 @@ public class AuthController {
 
     public AuthController(
             AuthService authService,
+            com.pranamitra.service.UserService userService,
             StudentDonorRepository studentDonorRepository,
             PatientRepository patientRepository,
             BloodRequestRepository bloodRequestRepository,
             BloodBankRepository bloodBankRepository,
             BloodBankService bloodBankService) {
         this.authService = authService;
+        this.userService = userService;
         this.studentDonorRepository = studentDonorRepository;
         this.patientRepository = patientRepository;
         this.bloodRequestRepository = bloodRequestRepository;
@@ -59,6 +62,26 @@ public class AuthController {
     public ResponseEntity<LoginResponse> login(
             @Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<ApiResponse<com.pranamitra.dto.response.UserResponse>> register(
+            @Valid @RequestBody com.pranamitra.dto.request.UserRequest request) {
+        return ResponseEntity.ok(new ApiResponse<>(true, "User registered successfully", userService.registerUser(request)));
+    }
+
+    @PostMapping("/register-donor")
+    public ResponseEntity<ApiResponse<com.pranamitra.dto.response.UserResponse>> registerDonor(
+            @Valid @RequestBody com.pranamitra.dto.request.UserRequest request) {
+        request.setRole(com.pranamitra.enums.RoleType.DONOR);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Donor registered successfully", userService.registerUser(request)));
+    }
+
+    @PostMapping("/register-patient")
+    public ResponseEntity<ApiResponse<com.pranamitra.dto.response.UserResponse>> registerPatient(
+            @Valid @RequestBody com.pranamitra.dto.request.UserRequest request) {
+        request.setRole(com.pranamitra.enums.RoleType.PATIENT);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Patient registered successfully", userService.registerUser(request)));
     }
 
     @GetMapping("/profile-status/{userId}")

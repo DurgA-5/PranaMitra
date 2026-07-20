@@ -29,17 +29,8 @@ function BloodBanks() {
       }
     } catch (err) {
       console.error("Error fetching blood banks:", err);
-      // Fallback mockup data if database is empty/issues
-      const mockup = [
-        { id: 1, bankName: "Red Cross Blood Center", address: "102 Healthcare Dr", city: "Hyderabad", phoneNumber: "+91 98765 43210" },
-        { id: 2, bankName: "City Blood Alliance", address: "405 Metro Plaza", city: "Bangalore", phoneNumber: "+91 87654 32109" },
-        { id: 3, bankName: "St. Jude Hospital Blood Bank", address: "12 Medical Enclave", city: "Chennai", phoneNumber: "+91 76543 21098" },
-        { id: 4, bankName: "Metropolitan Donor Bank", address: "98 Capital Ave", city: "Delhi", phoneNumber: "+91 65432 10987" },
-        { id: 5, bankName: "Lifesavers Blood Trust", address: "14 Hill Road", city: "Hyderabad", phoneNumber: "+91 91234 56789" },
-      ];
-      setBloodBanks(mockup);
-      const uniqueCities = [...new Set(mockup.map((item) => item.city))];
-      setCities(uniqueCities);
+      setBloodBanks([]);
+      setCities([]);
     } finally {
       setLoading(false);
     }

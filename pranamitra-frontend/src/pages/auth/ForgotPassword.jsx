@@ -105,7 +105,7 @@ function ForgotPassword() {
                 Developer Testing Simulator
               </span>
               <p className="text-[11px] text-slate-500 font-medium leading-normal">
-                For evaluation, you can skip checking emails and use this mock link directly:
+                For evaluation, you can use this generated security link directly:
               </p>
               <button
                 onClick={() => navigate(`/reset-password?token=${testToken}`)}

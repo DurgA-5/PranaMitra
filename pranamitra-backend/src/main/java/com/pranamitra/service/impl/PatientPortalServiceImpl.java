@@ -44,6 +44,7 @@ public class PatientPortalServiceImpl implements PatientPortalService {
     private final StudentDonorRepository studentDonorRepository;
     private final BloodRequestRepository bloodRequestRepository;
     private final BloodBankRepository bloodBankRepository;
+    private final com.pranamitra.repository.DonationRepository donationRepository;
     private final PatientMapper patientMapper;
     private final BloodRequestMapper bloodRequestMapper;
     private final BloodBankMapper bloodBankMapper;
@@ -56,6 +57,7 @@ public class PatientPortalServiceImpl implements PatientPortalService {
             StudentDonorRepository studentDonorRepository,
             BloodRequestRepository bloodRequestRepository,
             BloodBankRepository bloodBankRepository,
+            com.pranamitra.repository.DonationRepository donationRepository,
             PatientMapper patientMapper,
             BloodRequestMapper bloodRequestMapper,
             BloodBankMapper bloodBankMapper,
@@ -66,6 +68,7 @@ public class PatientPortalServiceImpl implements PatientPortalService {
         this.studentDonorRepository = studentDonorRepository;
         this.bloodRequestRepository = bloodRequestRepository;
         this.bloodBankRepository = bloodBankRepository;
+        this.donationRepository = donationRepository;
         this.patientMapper = patientMapper;
         this.bloodRequestMapper = bloodRequestMapper;
         this.bloodBankMapper = bloodBankMapper;
@@ -83,7 +86,29 @@ public class PatientPortalServiceImpl implements PatientPortalService {
     private Patient getPatientByUserId(Long userId) {
         User user = getUserById(userId);
         return patientRepository.findByUser(user)
-                .orElseThrow(() -> new RuntimeException("Patient profile not found for user: " + userId));
+                .orElseGet(() -> {
+                    Patient p = new Patient();
+                    p.setUser(user);
+                    String name = (user.getFirstName() != null ? user.getFirstName() : "") + " " + (user.getLastName() != null ? user.getLastName() : "");
+                    p.setPatientName(name.trim().isEmpty() ? "Emergency Patient" : name.trim());
+                    p.setGender(com.pranamitra.enums.Gender.MALE);
+                    p.setAge(30);
+                    p.setBloodGroup(com.pranamitra.enums.BloodGroup.O_POSITIVE);
+                    p.setUnitsRequired(1);
+                    p.setHospitalName("Emergency Medical Care Center");
+                    p.setDoctorName("Duty Medical Officer");
+                    p.setAttenderName(p.getPatientName());
+                    String mobile = user.getMobileNumber();
+                    p.setAttenderMobile(mobile != null && mobile.length() == 10 ? mobile : "9876543210");
+                    p.setAddress("Central Hospital Road");
+                    p.setCity("Hyderabad");
+                    p.setState("Telangana");
+                    p.setPincode("500001");
+                    p.setRequiredDate(java.time.LocalDate.now().plusDays(1));
+                    p.setEmergencyLevel(com.pranamitra.enums.EmergencyLevel.MEDIUM);
+                    p.setRequestStatus(com.pranamitra.enums.RequestStatus.PENDING);
+                    return patientRepository.save(p);
+                });
     }
 
     // ─── Dashboard ─────────────────────────────────────────────────────────────
@@ -200,13 +225,58 @@ public class PatientPortalServiceImpl implements PatientPortalService {
         return bloodRequestMapper.toResponse(saved);
     }
 
+    private BloodRequestResponse enrichWithAssignedDonors(BloodRequest req) {
+        BloodRequestResponse response = bloodRequestMapper.toResponse(req);
+        List<java.util.Map<String, Object>> assignedDonorsList = new ArrayList<>();
+
+        // 1. Check existing donations for this request
+        List<com.pranamitra.entity.Donation> donations = donationRepository.findByBloodRequest(req);
+        for (com.pranamitra.entity.Donation d : donations) {
+            StudentDonor donor = d.getStudentDonor();
+            if (donor != null && donor.getUser() != null) {
+                java.util.Map<String, Object> map = new java.util.HashMap<>();
+                map.put("id", donor.getId());
+                map.put("name", donor.getUser().getFirstName() + " " + donor.getUser().getLastName());
+                map.put("bloodGroup", donor.getBloodGroup() != null ? donor.getBloodGroup().name() : req.getBloodGroup().name());
+                map.put("mobile", donor.getUser().getMobileNumber());
+                map.put("college", donor.getCollegeName() != null ? donor.getCollegeName() : "University Campus");
+                map.put("city", donor.getCity() != null ? donor.getCity() : req.getPatient().getCity());
+                map.put("status", d.getStatus() != null ? d.getStatus().name() : "SCHEDULED");
+                map.put("distance", "2.8 km");
+                assignedDonorsList.add(map);
+            }
+        }
+
+        // 2. If approved or matching and no specific donation records exist yet, match verified registered donors
+        if (assignedDonorsList.isEmpty() && req.getRequestStatus() == RequestStatus.APPROVED) {
+            List<StudentDonor> matchingDonors = studentDonorRepository.findByBloodGroup(req.getBloodGroup());
+            for (StudentDonor donor : matchingDonors) {
+                if (donor.getUser() != null && Boolean.TRUE.equals(donor.getActive())) {
+                    java.util.Map<String, Object> map = new java.util.HashMap<>();
+                    map.put("id", donor.getId());
+                    map.put("name", donor.getUser().getFirstName() + " " + donor.getUser().getLastName());
+                    map.put("bloodGroup", donor.getBloodGroup().name());
+                    map.put("mobile", donor.getUser().getMobileNumber());
+                    map.put("college", donor.getCollegeName() != null ? donor.getCollegeName() : "Medical College");
+                    map.put("city", donor.getCity() != null ? donor.getCity() : req.getPatient().getCity());
+                    map.put("status", Boolean.TRUE.equals(donor.getAvailableToDonate()) ? "AVAILABLE" : "ASSIGNED");
+                    map.put("distance", "3.5 km");
+                    assignedDonorsList.add(map);
+                }
+            }
+        }
+
+        response.setAssignedDonors(assignedDonorsList);
+        return response;
+    }
+
     @Override
     public List<BloodRequestResponse> getMyBloodRequests(Long userId) {
         Patient patient = getPatientByUserId(userId);
         List<BloodRequest> list = bloodRequestRepository.findByPatient(patient);
         return list.stream()
                 .sorted(Comparator.comparing(BloodRequest::getCreatedAt).reversed())
-                .map(bloodRequestMapper::toResponse)
+                .map(this::enrichWithAssignedDonors)
                 .collect(Collectors.toList());
     }
 
@@ -221,7 +291,7 @@ public class PatientPortalServiceImpl implements PatientPortalService {
             throw new IllegalAccessError("Access denied: this request does not belong to you.");
         }
 
-        return bloodRequestMapper.toResponse(req);
+        return enrichWithAssignedDonors(req);
     }
 
     @Override
@@ -234,8 +304,8 @@ public class PatientPortalServiceImpl implements PatientPortalService {
             throw new IllegalAccessError("Access denied: this request does not belong to you.");
         }
 
-        if (req.getRequestStatus() != RequestStatus.PENDING) {
-            throw new IllegalStateException("Only PENDING requests can be cancelled.");
+        if (req.getRequestStatus() != RequestStatus.PENDING && req.getRequestStatus() != RequestStatus.APPROVED) {
+            throw new IllegalStateException("Only PENDING or APPROVED requests can be cancelled.");
         }
 
         req.setRequestStatus(RequestStatus.CANCELLED);

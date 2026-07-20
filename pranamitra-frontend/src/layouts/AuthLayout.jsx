@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from "react-router-dom";
-import logo from "../assets/logos/pranamitra-logo.jpeg";
+import logo from "../assets/logos/pranamitra-logo-modified.png";
+import PranaMitraBrand from "../components/common/PranaMitraBrand";
 
 function AuthLayout() {
   const location = useLocation();
@@ -13,12 +14,13 @@ function AuthLayout() {
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px]" />
 
         <div className="z-10 flex flex-col items-center justify-center space-y-8 max-w-sm">
-          {/* Large PranaMitra Logo */}
+          {/* Large PranaMitra Official Circular Logo */}
           <img
             src={logo}
-            alt="PranaMitra Logo"
-            className="w-36 h-36 rounded-[28px] object-cover shadow-2xl border-4 border-white/20 hover:scale-105 transition-transform duration-300"
+            alt="PranaMitra Official Logo"
+            className="w-36 h-36 rounded-full aspect-square object-contain shadow-2xl border-4 border-white/20 hover:scale-[1.03] transition-transform duration-250 bg-white"
           />
+
 
           {isRegister ? (
             /* Register Page Left Branding Panel Content */
@@ -76,27 +78,9 @@ function AuthLayout() {
         <div className="w-full max-w-[430px] flex flex-col items-center">
           {/* Logo on mobile only */}
           <div className="md:hidden mb-6 flex flex-col items-center select-none text-center">
-            <img
-              src={logo}
-              alt="Logo"
-              className="w-20 h-20 rounded-[20px] object-cover shadow-lg mb-3 border-2 border-[#B71C1C]/10"
-            />
-            {isRegister ? (
-              <>
-                <h2 className="text-2xl font-black text-[#212121]">Join PranaMitra</h2>
-                <p className="text-[#6B7280] text-xs font-bold uppercase tracking-wider mt-1">
-                  Become a Part of Saving Lives
-                </p>
-              </>
-            ) : (
-              <>
-                <h2 className="text-2xl font-black text-[#212121]">PranaMitra</h2>
-                <p className="text-[#6B7280] text-xs font-bold uppercase tracking-wider mt-1">
-                  Digital Blood Management Platform
-                </p>
-              </>
-            )}
+            <PranaMitraBrand size="responsive" showSubtitle={true} subtitleText="Blood Management System" />
           </div>
+
 
           <div className="w-full">
             <Outlet />

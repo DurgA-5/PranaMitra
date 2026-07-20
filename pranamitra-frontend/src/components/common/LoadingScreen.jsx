@@ -1,4 +1,5 @@
-import logo from "../../assets/logos/pranamitra-logo.jpeg";
+import logo from "../../assets/logos/pranamitra-logo-modified.png";
+import PranaMitraBrand from "./PranaMitraBrand";
 
 function LoadingScreen() {
   const pulseStyle = `
@@ -47,26 +48,24 @@ function LoadingScreen() {
         <div className="absolute w-40 h-40 rounded-full border border-slate-100 border-t-[#B71C1C] animate-loader-spin" />
         
         {/* Pulse scale logo container */}
-        <div className="w-32 h-32 rounded-3xl bg-white p-1 overflow-hidden shadow-lg animate-gentle-pulse">
+        <div className="w-32 h-32 rounded-full bg-white p-1 overflow-hidden shadow-lg animate-gentle-pulse flex items-center justify-center">
           <img
             src={logo}
             alt="PranaMitra Logo"
-            className="w-full h-full object-cover rounded-2xl"
+            className="w-full h-full object-contain rounded-full"
           />
         </div>
       </div>
 
       {/* System Titles */}
-      <div className="text-center space-y-2 max-w-xs">
-        <h1 className="text-3xl font-extrabold tracking-tight text-[#212121]">PranaMitra</h1>
-        <p className="text-[#6B7280] text-xs font-semibold uppercase tracking-widest">
-          Blood Management System
-        </p>
+      <div className="text-center space-y-2 flex flex-col items-center justify-center">
+        <PranaMitraBrand size="responsive" showSubtitle={true} subtitleText="Blood Management System" />
 
         {/* Loading text with fading transition */}
         <p className="text-[#B71C1C] text-sm font-bold tracking-widest mt-6 animate-text-fade">
           Loading...
         </p>
+
 
         {/* Bottom medical quotes */}
         <div className="pt-8 border-t border-slate-100 mt-8 space-y-1">

@@ -79,4 +79,8 @@ public class UserRequest {
     public void setRoleName(RoleType roleName) {
         this.roleName = roleName;
     }
+
+    public void setRole(RoleType role) {
+        this.roleName = role;
+    }
 }

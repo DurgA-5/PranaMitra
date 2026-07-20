@@ -4,7 +4,8 @@ import { toast } from "react-toastify";
 import { CheckCircle, ChevronLeft, ChevronRight, User, GraduationCap, MapPin, Sparkles } from "lucide-react";
 import api from "../../api/axios";
 import { getUserId } from "../../utils/token";
-import logo from "../../assets/logos/pranamitra-logo.jpeg";
+import logo from "../../assets/logos/pranamitra-logo-modified.png";
+import PranaMitraBrand from "../../components/common/PranaMitraBrand";
 import { motion, AnimatePresence } from "framer-motion";
 
 function CompleteProfile() {
@@ -132,14 +133,9 @@ function CompleteProfile() {
 
         {/* Top Header Logo */}
         <div className="flex flex-col items-center gap-3">
-          <img src={logo} alt="Logo" className="h-14 w-auto rounded-2xl bg-white p-0.5" />
-          <div>
-            <h3 className="text-xl font-bold tracking-tight text-white">PranaMitra</h3>
-            <p className="text-[10px] tracking-wider text-red-100 font-bold uppercase mt-0.5">
-              Digital Blood Management Platform
-            </p>
-          </div>
+          <PranaMitraBrand size="md" showSubtitle={true} subtitleText="Blood Management System" darkBg={true} />
         </div>
+
 
         {/* Central Dynamic Titles */}
         <div className="space-y-4 max-w-xs z-10">

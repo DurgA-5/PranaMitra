@@ -23,4 +23,6 @@ public interface DonationRepository extends JpaRepository<Donation, Long> {
     long countByStudentDonorAndStatus(StudentDonor studentDonor, DonationStatus status);
 
     Optional<Donation> findByStudentDonorAndBloodRequest(StudentDonor studentDonor, BloodRequest bloodRequest);
+
+    List<Donation> findByBloodRequest(BloodRequest bloodRequest);
 }

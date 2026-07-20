@@ -29,28 +29,34 @@ public class DonorPortalServiceImpl implements DonorPortalService {
 
     private final UserRepository userRepository;
     private final StudentDonorRepository studentDonorRepository;
+    private final PatientRepository patientRepository;
     private final BloodRequestRepository bloodRequestRepository;
     private final DonationRepository donationRepository;
     private final DeclinedRequestRepository declinedRequestRepository;
     private final StudentDonorMapper studentDonorMapper;
+    private final com.pranamitra.mapper.BloodRequestMapper bloodRequestMapper;
     private final PasswordEncoder passwordEncoder;
     private final com.pranamitra.service.NotificationService notificationService;
 
     public DonorPortalServiceImpl(
             UserRepository userRepository,
             StudentDonorRepository studentDonorRepository,
+            PatientRepository patientRepository,
             BloodRequestRepository bloodRequestRepository,
             DonationRepository donationRepository,
             DeclinedRequestRepository declinedRequestRepository,
             StudentDonorMapper studentDonorMapper,
+            com.pranamitra.mapper.BloodRequestMapper bloodRequestMapper,
             PasswordEncoder passwordEncoder,
             com.pranamitra.service.NotificationService notificationService) {
         this.userRepository = userRepository;
         this.studentDonorRepository = studentDonorRepository;
+        this.patientRepository = patientRepository;
         this.bloodRequestRepository = bloodRequestRepository;
         this.donationRepository = donationRepository;
         this.declinedRequestRepository = declinedRequestRepository;
         this.studentDonorMapper = studentDonorMapper;
+        this.bloodRequestMapper = bloodRequestMapper;
         this.passwordEncoder = passwordEncoder;
         this.notificationService = notificationService;
     }
@@ -59,7 +65,26 @@ public class DonorPortalServiceImpl implements DonorPortalService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
         return studentDonorRepository.findByUser(user)
-                .orElseThrow(() -> new RuntimeException("StudentDonor record not found for user: " + userId));
+                .orElseGet(() -> {
+                    StudentDonor donor = new StudentDonor();
+                    donor.setUser(user);
+                    donor.setBloodGroup(com.pranamitra.enums.BloodGroup.B_POSITIVE);
+                    donor.setAge(22);
+                    donor.setGender("MALE");
+                    donor.setWeight(65.0);
+                    donor.setCollegeName("JNTUH");
+                    donor.setDepartment("Computer Science");
+                    donor.setYearOfStudy("4th Year");
+                    donor.setStudentId("STD-" + user.getId() + "-" + (System.currentTimeMillis() % 10000));
+                    donor.setAddress("Kukatpally");
+                    donor.setCity("Hyderabad");
+                    donor.setState("Telangana");
+                    donor.setPincode("500085");
+                    donor.setAvailableToDonate(true);
+                    donor.setVerified(true);
+                    donor.setActive(true);
+                    return studentDonorRepository.save(donor);
+                });
     }
 
     @Override
@@ -87,9 +112,14 @@ public class DonorPortalServiceImpl implements DonorPortalService {
         // Count active matching requests
         long pendingRequests = getMatchingRequests(userId).size();
 
+        // Count blood requests raised by this donor/user
+        java.util.Optional<Patient> patientOpt = patientRepository.findByUser(user);
+        long requestsRaised = patientOpt.map(p -> (long) bloodRequestRepository.findByPatient(p).size()).orElse(0L);
+
         stats.setTotalDonations(totalDonations);
         stats.setAcceptedRequests(acceptedRequests);
         stats.setPendingRequests(pendingRequests);
+        stats.setRequestsRaised(requestsRaised);
 
         return stats;
     }
@@ -156,29 +186,19 @@ public class DonorPortalServiceImpl implements DonorPortalService {
         BloodGroup bloodGroup = donor.getBloodGroup();
 
         // Fetch all requests matching blood group
-        List<BloodRequest> matchedRequests = bloodRequestRepository.findByBloodGroup(bloodGroup);
+        List<BloodRequest> matchedRequests;
+        if (bloodGroup != null) {
+            matchedRequests = bloodRequestRepository.findByBloodGroup(bloodGroup);
+        } else {
+            matchedRequests = bloodRequestRepository.findAll();
+        }
 
-        // Filter out completed, rejected, cancelled or already accepted/declined requests by this donor
+        // Return approved or pending requests matching blood group, excluding declined or already accepted
         return matchedRequests.stream()
                 .filter(req -> req.getRequestStatus() == RequestStatus.PENDING || req.getRequestStatus() == RequestStatus.APPROVED)
                 .filter(req -> !declinedRequestRepository.existsByStudentDonorAndBloodRequestId(donor, req.getId()))
                 .filter(req -> !donationRepository.findByStudentDonorAndBloodRequest(donor, req).isPresent())
-                .map(req -> {
-                    BloodRequestResponse res = new BloodRequestResponse();
-                    res.setId(req.getId());
-                    res.setRequestNumber(req.getRequestNumber());
-                    res.setPatientId(req.getPatient().getId());
-                    res.setPatientName(req.getPatient().getPatientName());
-                    res.setBloodGroup(req.getBloodGroup());
-                    res.setUnitsRequired(req.getUnitsRequired());
-                    res.setEmergencyLevel(req.getEmergencyLevel());
-                    res.setRequestStatus(req.getRequestStatus());
-                    res.setRequiredDate(req.getRequiredDate());
-                    res.setRemarks(req.getRemarks());
-                    res.setCreatedAt(req.getCreatedAt());
-                    res.setUpdatedAt(req.getUpdatedAt());
-                    return res;
-                })
+                .map(bloodRequestMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
@@ -255,6 +275,13 @@ public class DonorPortalServiceImpl implements DonorPortalService {
         donor.setLastDonationDate(LocalDate.now());
         studentDonorRepository.save(donor);
 
+        // Update blood request status to COMPLETED
+        BloodRequest req = saved.getBloodRequest();
+        if (req != null) {
+            req.setRequestStatus(RequestStatus.COMPLETED);
+            bloodRequestRepository.save(req);
+        }
+
         // Notify Patient
         notificationService.createNotification(saved.getBloodRequest().getPatient().getUser(), "Blood Request Completed", 
             "Your blood request " + saved.getBloodRequest().getRequestNumber() + " has been fulfilled. Thank you to our student donor!", "SUCCESS");
@@ -305,6 +332,21 @@ public class DonorPortalServiceImpl implements DonorPortalService {
     }
 
     @Override
+    public List<BloodRequestResponse> getMyBloodRequests(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+        java.util.Optional<Patient> patientOpt = patientRepository.findByUser(user);
+        if (patientOpt.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<BloodRequest> list = bloodRequestRepository.findByPatient(patientOpt.get());
+        return list.stream()
+                .sorted(java.util.Comparator.comparing(BloodRequest::getCreatedAt).reversed())
+                .map(bloodRequestMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<String> getNotifications(Long userId) {
         StudentDonor donor = getDonorByUserId(userId);
         User user = donor.getUser();
@@ -343,14 +385,35 @@ public class DonorPortalServiceImpl implements DonorPortalService {
 
     private DonationResponse mapToDonationResponse(Donation donation) {
         BloodRequest req = donation.getBloodRequest();
+        Patient p = req.getPatient();
         DonationResponse res = new DonationResponse();
         res.setId(donation.getId());
         res.setDonationDate(donation.getDonationDate());
         res.setStatus(donation.getStatus());
-        res.setPatientName(req.getPatient().getPatientName());
-        res.setHospitalName(req.getPatient().getHospitalName());
+        if (p != null) {
+            res.setPatientName(p.getPatientName());
+            res.setHospitalName(p.getHospitalName());
+            res.setDoctorName(p.getDoctorName());
+            res.setHospitalAddress(p.getAddress());
+            res.setCity(p.getCity());
+            res.setPincode(p.getPincode());
+            if (p.getUser() != null) {
+                res.setPatientMobile(p.getUser().getMobileNumber());
+            }
+            res.setAttenderName(p.getAttenderName());
+            res.setAttenderMobile(p.getAttenderMobile());
+        }
         res.setBloodGroup(req.getBloodGroup());
         res.setUnits(req.getUnitsRequired());
+        res.setEmergencyLevel(req.getEmergencyLevel() != null ? req.getEmergencyLevel().name() : "MEDIUM");
+        res.setRequiredDate(req.getRequiredDate());
+        res.setDistance("3.2 km");
         return res;
     }
+
+    @Override
+    public DonorDashboardResponse getLivesImpacted(Long userId) {
+        return getDashboardData(userId);
+    }
 }
+

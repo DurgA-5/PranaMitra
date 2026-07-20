@@ -32,13 +32,14 @@ public class ContactQueryController {
     }
 
     // Admin API - list all queries
-    @GetMapping("/api/admin/contact")
+    @GetMapping(value = {"/api/admin/contact", "/api/admin/contact-queries"})
     public ResponseEntity<ApiResponse<List<ContactQuery>>> getAllQueries() {
         List<ContactQuery> queries = contactQueryService.getAllQueries();
         return ResponseEntity.ok(
                 new ApiResponse<>(true, "Contact queries retrieved successfully.", queries)
         );
     }
+
 
     // Admin API - view query detail
     @GetMapping("/api/admin/contact/{id}")

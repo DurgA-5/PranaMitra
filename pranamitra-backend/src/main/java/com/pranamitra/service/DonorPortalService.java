@@ -35,5 +35,10 @@ public interface DonorPortalService {
 
     List<DonationResponse> getDonationHistory(Long userId);
 
+    List<BloodRequestResponse> getMyBloodRequests(Long userId);
+
     List<String> getNotifications(Long userId);
+
+    DonorDashboardResponse getLivesImpacted(Long userId);
 }
+

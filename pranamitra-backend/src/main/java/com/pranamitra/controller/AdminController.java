@@ -237,12 +237,19 @@ public class AdminController {
     // Reports & Analytics
     // ==================================================
 
+    @GetMapping("/reports")
+    public ResponseEntity<com.pranamitra.dto.response.DashboardResponse> getGeneralReportSummary() {
+        return ResponseEntity.ok(adminService.getDashboardStatistics());
+    }
+
+
     @GetMapping("/reports/blood-groups")
     public ResponseEntity<List<BloodGroupReportResponse>> getBloodGroupStatistics() {
 
         return ResponseEntity.ok(
                 adminService.getBloodGroupStatistics());
     }
+
 
     @GetMapping("/reports/request-status")
     public ResponseEntity<List<RequestStatusReportResponse>> getRequestStatusStatistics() {

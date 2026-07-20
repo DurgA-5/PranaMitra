@@ -29,8 +29,19 @@ public class BloodRequestResponse {
 
     private String remarks;
 
-    private LocalDateTime createdAt;
+    private String hospitalName;
+    private String doctorName;
+    private String hospitalAddress;
+    private String city;
+    private String state;
+    private String pincode;
+    private String patientMobile;
+    private String attenderName;
+    private String attenderMobile;
+    private String distance;
+    private java.util.List<java.util.Map<String, Object>> assignedDonors;
 
+    private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     public BloodRequestResponse() {
@@ -116,6 +127,94 @@ public class BloodRequestResponse {
         this.remarks = remarks;
     }
 
+    public String getHospitalName() {
+        return hospitalName;
+    }
+
+    public void setHospitalName(String hospitalName) {
+        this.hospitalName = hospitalName;
+    }
+
+    public String getDoctorName() {
+        return doctorName;
+    }
+
+    public void setDoctorName(String doctorName) {
+        this.doctorName = doctorName;
+    }
+
+    public String getHospitalAddress() {
+        return hospitalAddress;
+    }
+
+    public void setHospitalAddress(String hospitalAddress) {
+        this.hospitalAddress = hospitalAddress;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
+    }
+
+    public String getPincode() {
+        return pincode;
+    }
+
+    public void setPincode(String pincode) {
+        this.pincode = pincode;
+    }
+
+    public String getPatientMobile() {
+        return patientMobile;
+    }
+
+    public void setPatientMobile(String patientMobile) {
+        this.patientMobile = patientMobile;
+    }
+
+    public String getAttenderName() {
+        return attenderName;
+    }
+
+    public void setAttenderName(String attenderName) {
+        this.attenderName = attenderName;
+    }
+
+    public String getAttenderMobile() {
+        return attenderMobile;
+    }
+
+    public void setAttenderMobile(String attenderMobile) {
+        this.attenderMobile = attenderMobile;
+    }
+
+    public String getDistance() {
+        return distance;
+    }
+
+    public void setDistance(String distance) {
+        this.distance = distance;
+    }
+
+    public java.util.List<java.util.Map<String, Object>> getAssignedDonors() {
+        return assignedDonors;
+    }
+
+    public void setAssignedDonors(java.util.List<java.util.Map<String, Object>> assignedDonors) {
+        this.assignedDonors = assignedDonors;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -131,5 +230,4 @@ public class BloodRequestResponse {
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
-
 }
